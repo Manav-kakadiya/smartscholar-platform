@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from 'next/link'
+import { authAPI } from '@/lib/api'
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -30,28 +31,36 @@ export default function SignupPage() {
       return
     }
 
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          user_type: formData.userType
-        })
+      console.log('🔄 Attempting signup...', { email: formData.email, user_type: formData.userType })
+      
+      await authAPI.signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        user_type: formData.userType
       })
-
-      if (response.ok) {
-        router.push('/auth/login?message=Account created successfully')
+      
+      console.log('✅ Signup successful!')
+      alert('Account created successfully! Please login.')
+      router.push('/auth/login')
+    } catch (err: any) {
+      console.error('❌ Signup failed:', err)
+      
+      if (err.response) {
+        setError(err.response.data.detail || 'Registration failed')
+      } else if (err.request) {
+        setError('Cannot connect to server. Make sure backend is running.')
       } else {
-        const data = await response.json()
-        setError(data.detail || 'Registration failed')
+        setError('Registration failed. Please try again.')
       }
-    } catch (err) {
-      setError('Connection error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -92,6 +101,7 @@ export default function SignupPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="Minimum 6 characters"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 required
@@ -102,6 +112,7 @@ export default function SignupPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                placeholder="Re-enter password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 required

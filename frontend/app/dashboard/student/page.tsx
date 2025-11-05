@@ -6,14 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, AlertCircle, Calendar, BookOpen } from 'lucide-react'
+import { TrendingUp, AlertCircle, Calendar, BookOpen, MessageSquare } from 'lucide-react'
+import { studentAPI } from '@/lib/api'
 
 export default function StudentDashboard() {
   const [studentData, setStudentData] = useState({
     name: 'Loading...',
     gpa: 0,
     riskLevel: 'low',
-    riskScore: 0
+    riskScore: 0,
   })
 
   const performanceData = [
@@ -30,14 +31,23 @@ export default function StudentDashboard() {
     { title: 'History Essay', due: '3 days', priority: 'low' },
   ]
 
+  // ✅ Fetch real student profile from API
   useEffect(() => {
-    // TODO: Fetch actual student data from API
-    setStudentData({
-      name: 'John Doe',
-      gpa: 3.5,
-      riskLevel: 'low',
-      riskScore: 15
-    })
+    const fetchStudentData = async () => {
+      try {
+        const response = await studentAPI.getMyProfile()
+        setStudentData({
+          name: response.data.name,
+          gpa: response.data.gpa,
+          riskLevel: response.data.risk_level,
+          riskScore: response.data.risk_score,
+        })
+      } catch (error) {
+        console.error('Failed to fetch student data:', error)
+      }
+    }
+
+    fetchStudentData()
   }, [])
 
   const getRiskColor = (level: string) => {
@@ -54,13 +64,12 @@ export default function StudentDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {studentData.name}! 👋
           </h1>
-          <p className="text-gray-600 mt-1">
-            Here's your academic overview
-          </p>
+          <p className="text-gray-600 mt-1">Here's your academic overview</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6">
+          {/* GPA */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Current GPA</CardTitle>
@@ -68,12 +77,11 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{studentData.gpa}</div>
-              <p className="text-xs text-green-600 mt-1">
-                ↑ +0.2 from last month
-              </p>
+              <p className="text-xs text-green-600 mt-1">↑ +0.2 from last month</p>
             </CardContent>
           </Card>
 
+          {/* Risk */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Dropout Risk</CardTitle>
@@ -84,12 +92,11 @@ export default function StudentDashboard() {
                 <div className={`w-3 h-3 rounded-full ${getRiskColor(studentData.riskLevel)}`} />
                 <span className="text-2xl font-bold uppercase">{studentData.riskLevel}</span>
               </div>
-              <p className="text-xs text-gray-600 mt-1">
-                {studentData.riskScore}% risk score
-              </p>
+              <p className="text-xs text-gray-600 mt-1">{studentData.riskScore}% risk score</p>
             </CardContent>
           </Card>
 
+          {/* Study Streak */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
@@ -97,9 +104,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">7 days</div>
-              <p className="text-xs text-gray-600 mt-1">
-                Keep it up! 🔥
-              </p>
+              <p className="text-xs text-gray-600 mt-1">Keep it up! 🔥</p>
             </CardContent>
           </Card>
         </div>
@@ -117,12 +122,7 @@ export default function StudentDashboard() {
                 <XAxis dataKey="month" />
                 <YAxis domain={[0, 4]} />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="gpa" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                />
+                <Line type="monotone" dataKey="gpa" stroke="#3b82f6" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -138,7 +138,10 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {upcomingTasks.map((task, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-5 h-5 text-blue-600" />
                     <div>
@@ -146,7 +149,9 @@ export default function StudentDashboard() {
                       <p className="text-sm text-gray-600">Due in {task.due}</p>
                     </div>
                   </div>
-                  <Badge variant={task.priority === 'high' ? 'destructive' : 'secondary'}>
+                  <Badge
+                    variant={task.priority === 'high' ? 'destructive' : 'secondary'}
+                  >
                     {task.priority}
                   </Badge>
                 </div>
